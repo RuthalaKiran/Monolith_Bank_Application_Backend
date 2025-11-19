@@ -23,7 +23,7 @@ public class AccountControllerTest {
     void testCreateAccountUsingRestTemplate(){
         RestTemplate restTemplate = new RestTemplate();
 
-        String url = "http://localhost:8080/api/accounts/create";
+        String url = "http://localhost:8585/api/accounts/create";
 
         AccountRequestDTO dto = new AccountRequestDTO();
         dto.setHolderName("Kiran");
@@ -44,7 +44,7 @@ public class AccountControllerTest {
     void testDepositUsingRestTemplate(){
         RestTemplate restTemplate = new RestTemplate();
 
-        String url = "http://localhost:8080/api/accounts/{accNo}/deposit";
+        String url = "http://localhost:8585/api/accounts/{accNo}/deposit";
 
         DepositRequestDTO dto = new DepositRequestDTO();
         dto.setAccountNumber("KIRA8018");
@@ -68,8 +68,6 @@ public class AccountControllerTest {
        Assertions.assertNotNull(body);
        Assertions.assertTrue(body.isSuccess());
        Assertions.assertEquals("Deposit successfully",body.getMessage());
-
-        System.out.println("create account api is done");
     }
 
     @Test
@@ -81,7 +79,7 @@ public class AccountControllerTest {
                 return false; //  dont throw 400/500 exceptions
             }
         });
-        String url = "http://localhost:8080/api/accounts/{accNo}/deposit";
+        String url = "http://localhost:8585/api/accounts/{accNo}/deposit";
 
         DepositRequestDTO dto = new DepositRequestDTO();
         dto.setAccountNumber("KIRA8018");
@@ -104,16 +102,14 @@ public class AccountControllerTest {
 
         Assertions.assertNotNull(body);
         Assertions.assertFalse(body.isSuccess());
-        Assertions.assertEquals("Amount must be greater than 0",body.getMessage());
-
-        System.out.println("create account api is done");
+        Assertions.assertTrue(body.getMessage().contains("Deposit amount must be greater than 0"));
     }
 
     @Test
     void testWithdrawUsingRestTemplate(){
         RestTemplate restTemplate = new RestTemplate();
 
-        String url = "http://localhost:8080/api/accounts/{accNo}/withdraw";
+        String url = "http://localhost:8585/api/accounts/{accNo}/withdraw";
 
         WithdrawRequestDTO dto = new WithdrawRequestDTO();
         dto.setAccountNumber("KIRA8018");
@@ -146,7 +142,7 @@ public class AccountControllerTest {
 
         RestTemplate restTemplate = new RestTemplate();
 
-        String url = "http://localhost:8080/api/accounts/transfer";
+        String url = "http://localhost:8585/api/accounts/transfer";
 
         ApiResponse response = restTemplate.postForObject(url,dto,ApiResponse.class);
 
@@ -160,7 +156,7 @@ public class AccountControllerTest {
     @Test
     void testGetAccountUsingRestTemplate(){
         RestTemplate restTemplate = new RestTemplate();
-        String url = "http://localhost:8080/api/accounts/{accountNumber}";
+        String url = "http://localhost:8585/api/accounts/{accountNumber}";
         ApiResponse response = restTemplate.getForObject(url,ApiResponse.class,"KIRA8550");
 
         System.out.println("response is "+response);
@@ -172,7 +168,7 @@ public class AccountControllerTest {
     @Test
     void testGetTransactionsByAccount(){
         RestTemplate restTemplate = new RestTemplate();
-        String url = "http://localhost:8080/api/accounts/{accountNumber}/transactions";
+        String url = "http://localhost:8585/api/accounts/{accountNumber}/transactions";
 
         ResponseEntity<ApiResponse> response = restTemplate.exchange(
                 url,

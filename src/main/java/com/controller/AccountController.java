@@ -2,6 +2,7 @@ package com.controller;
 
 import com.dto.*;
 import com.service.AccountService;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +22,7 @@ public class AccountController {
 
     // create new account
     @PostMapping(value = "create", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ApiResponse<?>> createAccount(@RequestBody AccountRequestDTO dto){
+    public ResponseEntity<ApiResponse<?>> createAccount(@Valid @RequestBody AccountRequestDTO dto){
         logger.info("Request to create account {}",dto.getHolderName());
         AccountResponseDTO accountResponseDTO = accountService.createAccount(dto);
         logger.info("Account created successfully :"+accountResponseDTO.getAccountNumber());
@@ -30,7 +31,7 @@ public class AccountController {
 
     // deposit money
     @PutMapping(value = "{accountNumber}/deposit",consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ApiResponse<?>> deposit(@PathVariable("accountNumber") String accountNumber, @RequestBody DepositRequestDTO dto){
+    public ResponseEntity<ApiResponse<?>> deposit(@PathVariable("accountNumber") String accountNumber,@Valid @RequestBody DepositRequestDTO dto){
         dto.setAccountNumber(accountNumber);
         logger.info("Deposit request received for account {}: amount {}", accountNumber, dto.getAmount());
         TransactionResponseDTO transactionResponseDTO = accountService.deposit(dto);
@@ -40,7 +41,7 @@ public class AccountController {
 
     // withdraw money
     @PutMapping(value = "{accountNumber}/withdraw",consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ApiResponse<?>> withdraw(@PathVariable("accountNumber") String accountNumber,@RequestBody WithdrawRequestDTO dto){
+    public ResponseEntity<ApiResponse<?>> withdraw(@PathVariable("accountNumber") String accountNumber,@Valid @RequestBody WithdrawRequestDTO dto){
         dto.setAccountNumber(accountNumber);
         logger.info("Withdrawal request received for account {}: amount {}", accountNumber, dto.getAmount());
         TransactionResponseDTO transactionResponseDTO = accountService.withdraw(dto);
@@ -50,7 +51,7 @@ public class AccountController {
 
     // transfer money
     @PostMapping(value = "transfer", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ApiResponse<?>> transfer(@RequestBody TransferRequestDTO dto){
+    public ResponseEntity<ApiResponse<?>> transfer(@Valid @RequestBody TransferRequestDTO dto){
         logger.info("Transfer request from {} to {}: amount {}", dto.getFromAccount(), dto.getToAccount(), dto.getAmount());
         TransactionResponseDTO transactionResponseDTO = accountService.transfer(dto);
         logger.info("Transfer successful: transactionId {}", transactionResponseDTO.getTransactionId());

@@ -1,10 +1,15 @@
 package com.dto;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+
 /*
 This DTO is used to take accNumber and amount from user for deposit
  */
 public class DepositRequestDTO {
     private String accountNumber;
+
+    @Min(value = 1,message = "Deposit amount must be greater than 0")
     private Double amount;
 
     public String getAccountNumber() {
