@@ -13,5 +13,5 @@ public class BankApplication {
 		SpringApplication.run(BankApplication.class, args);
         System.out.println("Spring is up...");
 	}
-
+    
 }

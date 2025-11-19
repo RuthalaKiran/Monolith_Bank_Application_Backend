@@ -14,6 +14,8 @@ import com.repository.AccountRepository;
 import com.repository.TransactionRepository;
 import com.utils.AccountNumberGenerator;
 import com.utils.TransactionIdGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -29,9 +31,12 @@ public class AccountService {
     @Autowired
     TransactionRepository transactionRepository;
 
+    Logger logger = LoggerFactory.getLogger(AccountService.class);
+
     // create account
     public AccountResponseDTO createAccount(AccountRequestDTO dto){
         if(dto.getHolderName() == null || dto.getHolderName().trim().isEmpty()){
+            logger.warn("Attempt to create account with empty holder name");
             throw new InvalidInputException(" Account holder name is required");
         }
 
@@ -51,19 +56,25 @@ public class AccountService {
         // save account to db
         accountRepository.save(acc);
 
+        logger.info("Account created successfully: {}", accountNumber);
         return mapToAccountResponse(acc);
     }
 
     // deposit
     public TransactionResponseDTO deposit(DepositRequestDTO dto){
         if(dto.getAccountNumber() == null || dto.getAccountNumber().trim().isEmpty()){
+            logger.warn("Deposit attempt with empty account number");
             throw new InvalidInputException("Account number is required");
         }
         if(dto.getAmount() == null || dto.getAmount()<=0){
+            logger.warn("Deposit attempt with invalid amount: {}", dto.getAmount());
             throw new InvalidAmountException("Amount must be greater than 0");
         }
         Account accFromDb = accountRepository.findByAccountNumber(dto.getAccountNumber())
-                        .orElseThrow(()->new AccountNotFoundException("Account not found"));
+                        .orElseThrow(()-> {
+                            logger.error("Deposit failed: Account not found {}", dto.getAccountNumber());
+                            return new AccountNotFoundException("Account not found");
+                        });
 
         // update balance
         accFromDb.setBalance(accFromDb.getBalance() + dto.getAmount());
@@ -86,22 +97,30 @@ public class AccountService {
         accFromDb.getTransactions().add(t);
         accountRepository.save(accFromDb);
 
+        logger.info("Deposit successful for account {}: amount {}", dto.getAccountNumber(), dto.getAmount());
         return mapToTxnResponse(t);
     }
 
     // withdraw
     public TransactionResponseDTO withdraw(WithdrawRequestDTO dto){
         if(dto.getAccountNumber() == null || dto.getAccountNumber().trim().isEmpty()){
+            logger.warn("Withdrawal attempt with empty account number");
             throw new InvalidInputException("Account number is required");
         }
         if(dto.getAmount() == null || dto.getAmount()<=0){
+            logger.warn("Withdrawal attempt with invalid amount: {}", dto.getAmount());
             throw new InvalidAmountException("Amount must be greater than 0");
         }
         Account accFromDb = accountRepository.findByAccountNumber(dto.getAccountNumber())
-                .orElseThrow(()->new AccountNotFoundException("Account not found"));
+                .orElseThrow(() -> {
+                    logger.error("Withdrawal failed: Account not found {}", dto.getAccountNumber());
+                    return new AccountNotFoundException("Account not found");
+                });
 
         // validate withdraw balance
         if(accFromDb.getBalance() < dto.getAmount()){
+            logger.warn("Withdrawal failed: Insufficient balance for account {}. Requested: {}, Available: {}",
+                    dto.getAccountNumber(), dto.getAmount(), accFromDb.getBalance());
             throw new InsufficientBalanceException("Insufficient balance");
         }
         // update balance
@@ -124,27 +143,38 @@ public class AccountService {
         accFromDb.getTransactions().add(t);
         accountRepository.save(accFromDb);
 
+        logger.info("Withdrawal successful for account {}: amount {}", dto.getAccountNumber(), dto.getAmount());
         return mapToTxnResponse(t);
     }
 
     // transfer
     public TransactionResponseDTO transfer(TransferRequestDTO dto){
         if(dto.getAmount() == null || dto.getAmount()<=0){
+            logger.warn("Transfer attempt with invalid amount: {}", dto.getAmount());
             throw new InvalidAmountException("Amount must be greater than 0");
         }
         // check if source and destination same
         if(dto.getFromAccount().equals(dto.getToAccount())){
+            logger.warn("Transfer attempt from and to same account: {}", dto.getFromAccount());
             throw new InvalidInputException("Source and destination cannot be same");
         }
 
         // get accounts and validate
         Account sourceAcc = accountRepository.findByAccountNumber(dto.getFromAccount())
-                .orElseThrow(()->new AccountNotFoundException("Account not found"));
+                .orElseThrow(() -> {
+                    logger.error("Transfer failed: Source account not found {}", dto.getFromAccount());
+                    return new AccountNotFoundException("Account not found");
+                });
         Account destinationAcc = accountRepository.findByAccountNumber(dto.getToAccount())
-                .orElseThrow(()->new AccountNotFoundException("Account not found"));
+                .orElseThrow(() -> {
+                    logger.error("Transfer failed: Destination account not found {}", dto.getToAccount());
+                    return new AccountNotFoundException("Account not found");
+                });
 
         // validate source has amount
         if(sourceAcc.getBalance() < dto.getAmount()){
+            logger.warn("Transfer failed: Insufficient balance in source account {}. Requested: {}, Available: {}",
+                    dto.getFromAccount(), dto.getAmount(), sourceAcc.getBalance());
             throw new InsufficientBalanceException("Insufficient balance");
         }
 
@@ -173,26 +203,37 @@ public class AccountService {
         accountRepository.save(sourceAcc);
         accountRepository.save(destinationAcc);
 
+        logger.info("Transfer successful from {} to {}: amount {}. TransactionId: {}",
+                dto.getFromAccount(), dto.getToAccount(), dto.getAmount(), t.getTransactionId());
         return mapToTxnResponse(t);
     }
 
     // retrieve account details
     public AccountResponseDTO getAccountDetails(String accountNumber){
+        logger.info("Fetching account details for {}", accountNumber);
         Account acc = accountRepository.findByAccountNumber(accountNumber)
-                .orElseThrow(()->new AccountNotFoundException("Account not found"));
+                .orElseThrow(() -> {
+                    logger.error("Account not found {}", accountNumber);
+                    return new AccountNotFoundException("Account not found");
+                });
         return mapToAccountResponse(acc);
     }
 
     // get all transactions by account number
     public List<TransactionResponseDTO> getTransactionsByAccount(String accountNumber){
+        logger.info("Fetching all transactions for account {}", accountNumber);
         List<Transactions> transactionsList = accountRepository.findByAccountNumber(accountNumber)
-                                 .orElseThrow(()-> new AccountNotFoundException("Account not found")).getTransactions();
+                .orElseThrow(() -> {
+                    logger.error("Account not found {}", accountNumber);
+                    return new AccountNotFoundException("Account not found");
+                }).getTransactions();
         List<TransactionResponseDTO> list = new ArrayList<>();
         // convert to TransactionResponse DTO
         for(Transactions t: transactionsList){
             TransactionResponseDTO dto = mapToTxnResponse(t);
             list.add(dto);
         }
+        logger.info("Fetched {} transactions for account {}", list.size(), accountNumber);
         return list;
     }
 
